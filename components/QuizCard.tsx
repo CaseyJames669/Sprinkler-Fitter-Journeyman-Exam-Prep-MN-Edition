@@ -22,9 +22,9 @@ export const QuizCard: React.FC<QuizCardProps> = ({
   onNext,
   onExplain
 }) => {
-  
+
   const getDifficultyColor = (diff: string) => {
-    switch(diff) {
+    switch (diff) {
       case 'Easy': return 'bg-green-100 text-green-800';
       case 'Medium': return 'bg-yellow-100 text-yellow-800';
       case 'Hard': return 'bg-red-100 text-red-800';
@@ -33,7 +33,7 @@ export const QuizCard: React.FC<QuizCardProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-lg p-6 md:p-8 max-w-2xl w-full mx-auto border-t-4 border-red-600">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 md:p-8 max-w-2xl w-full mx-auto border-t-4 border-red-600 transition-colors duration-200">
       <div className="flex justify-between items-start mb-4">
         <div className="flex gap-2 flex-wrap items-center">
           <span className="inline-block px-3 py-1 bg-gray-100 text-gray-600 text-xs font-semibold rounded-full uppercase tracking-wide">
@@ -43,9 +43,9 @@ export const QuizCard: React.FC<QuizCardProps> = ({
             {question.difficulty}
           </span>
           {question.sprinklerType && question.sprinklerType !== 'General' && (
-             <span className="inline-block px-3 py-1 bg-indigo-100 text-indigo-800 text-xs font-bold rounded-full uppercase tracking-wide">
-                {question.sprinklerType}
-             </span>
+            <span className="inline-block px-3 py-1 bg-indigo-100 text-indigo-800 text-xs font-bold rounded-full uppercase tracking-wide">
+              {question.sprinklerType}
+            </span>
           )}
         </div>
         {question.is_mn_amendment && (
@@ -55,27 +55,27 @@ export const QuizCard: React.FC<QuizCardProps> = ({
         )}
       </div>
 
-      <h2 className="text-xl md:text-2xl font-bold text-gray-800 mb-6 leading-snug">
+      <h2 className="text-xl md:text-2xl font-bold text-gray-800 dark:text-white mb-6 leading-snug">
         {question.question}
       </h2>
 
       <div className="space-y-3 mb-8">
         {shuffledOptions.map((option, idx) => {
           let btnClass = "w-full text-left p-4 rounded-lg border-2 transition-all duration-200 font-medium ";
-          
+
           if (showAnswer) {
             if (option === question.answer) {
-              btnClass += "bg-green-100 border-green-500 text-green-800";
+              btnClass += "bg-green-100 dark:bg-green-900/30 border-green-500 text-green-800 dark:text-green-300";
             } else if (option === selectedOption && option !== question.answer) {
-              btnClass += "bg-red-50 border-red-500 text-red-800";
+              btnClass += "bg-red-50 dark:bg-red-900/30 border-red-500 text-red-800 dark:text-red-300";
             } else {
-              btnClass += "bg-gray-50 border-transparent opacity-50";
+              btnClass += "bg-gray-50 dark:bg-gray-700 border-transparent opacity-50 text-gray-500 dark:text-gray-500";
             }
           } else {
             if (selectedOption === option) {
-              btnClass += "bg-red-50 border-red-500 text-red-800";
+              btnClass += "bg-red-50 dark:bg-red-900/30 border-red-500 text-red-800 dark:text-red-300";
             } else {
-              btnClass += "bg-gray-50 border-transparent hover:bg-gray-100 hover:border-gray-300 text-gray-700";
+              btnClass += "bg-gray-50 dark:bg-gray-700 border-transparent hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 hover:border-gray-300 dark:hover:border-gray-500";
             }
           }
 
@@ -93,17 +93,17 @@ export const QuizCard: React.FC<QuizCardProps> = ({
       </div>
 
       {showAnswer && (
-        <div className="animate-fade-in mb-6 bg-blue-50 p-4 rounded-lg border border-blue-100">
-          <h3 className="text-sm font-bold text-blue-900 mb-1">Code Reference</h3>
-          <p className="text-blue-800 text-sm mb-2 font-mono">{question.citation}</p>
-          <p className="text-gray-700 text-sm italic">"{question.code_text}"</p>
+        <div className="animate-fade-in mb-6 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-100 dark:border-blue-800">
+          <h3 className="text-sm font-bold text-blue-900 dark:text-blue-300 mb-1">Code Reference</h3>
+          <p className="text-blue-800 dark:text-blue-200 text-sm mb-2 font-mono">{question.citation}</p>
+          <p className="text-gray-700 dark:text-gray-300 text-sm italic">"{question.code_text}"</p>
           {question.mnemonic && (
-             <p className="mt-2 text-sm text-purple-700 font-semibold">💡 Tip: {question.mnemonic}</p>
+            <p className="mt-2 text-sm text-purple-700 dark:text-purple-300 font-semibold">💡 Tip: {question.mnemonic}</p>
           )}
         </div>
       )}
 
-      <div className="flex gap-4 border-t pt-6">
+      <div className="flex gap-4 border-t dark:border-gray-700 pt-6">
         <button
           onClick={onExplain}
           disabled={isAiLoading}
@@ -126,7 +126,7 @@ export const QuizCard: React.FC<QuizCardProps> = ({
             </>
           )}
         </button>
-        
+
         {showAnswer && (
           <button
             onClick={onNext}

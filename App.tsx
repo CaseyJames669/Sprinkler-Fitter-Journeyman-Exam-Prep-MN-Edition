@@ -5,6 +5,7 @@ import { QuizCard } from './components/QuizCard';
 import { Flashcard } from './components/Flashcard';
 import { AITutor } from './components/AITutor';
 import { loadProgress, saveProgress } from './services/storageService';
+import { useTheme } from './context/ThemeContext';
 
 // Utility for Fisher-Yates shuffle
 const shuffleArray = <T,>(array: T[]): T[] => {
@@ -17,15 +18,16 @@ const shuffleArray = <T,>(array: T[]): T[] => {
 };
 
 const App: React.FC = () => {
+  const { theme, toggleTheme } = useTheme();
   const [view, setView] = useState<'dashboard' | 'quiz' | 'flashcards'>('dashboard');
   const [isTutorOpen, setIsTutorOpen] = useState(false);
   const [activeMode, setActiveMode] = useState<QuizMode>(QuizMode.ALL);
   const [userProgress, setUserProgress] = useState<UserProgress>(loadProgress());
-  
+
   // Data State
   const [allQuestions, setAllQuestions] = useState<Question[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
-  
+
   // Quiz State
   const [quizState, setQuizState] = useState<QuizState>({
     questions: [],
@@ -79,14 +81,14 @@ const App: React.FC = () => {
   };
 
   const updateFlashcardProgress = () => {
-      setUserProgress(prev => {
-          const newProgress = {
-              ...prev,
-              flashcardsLearned: prev.flashcardsLearned + 1
-          };
-          saveProgress(newProgress);
-          return newProgress;
-      });
+    setUserProgress(prev => {
+      const newProgress = {
+        ...prev,
+        flashcardsLearned: prev.flashcardsLearned + 1
+      };
+      saveProgress(newProgress);
+      return newProgress;
+    });
   };
 
   const filterQuestions = (mode: QuizMode, difficulty: DifficultyLevel, sprinklerType: SprinklerType, category: string, mnOnly: boolean): Question[] => {
@@ -139,9 +141,9 @@ const App: React.FC = () => {
       alert(`No questions found matching your criteria. Loading all questions for this selection instead.`);
       // If specific filters yielded 0 results, try relaxing them
       if (mnOnly) {
-         filtered = filterQuestions(mode, 'Any', 'Any', 'Any', true);
+        filtered = filterQuestions(mode, 'Any', 'Any', 'Any', true);
       } else {
-         filtered = filterQuestions(mode, 'Any', 'Any', 'Any', false);
+        filtered = filterQuestions(mode, 'Any', 'Any', 'Any', false);
       }
     }
 
@@ -149,10 +151,10 @@ const App: React.FC = () => {
     filtered = shuffleArray(filtered);
 
     if (mode === QuizMode.FLASHCARDS) {
-        setFlashcardQueue(filtered);
-        setLearnedCount(0);
-        setView('flashcards');
-        return;
+      setFlashcardQueue(filtered);
+      setLearnedCount(0);
+      setView('flashcards');
+      return;
     }
 
     // Prep first question options for Quiz Mode
@@ -168,7 +170,7 @@ const App: React.FC = () => {
       isFinished: false,
       shuffledOptions: options,
     });
-    
+
     setView('quiz');
   };
 
@@ -192,7 +194,7 @@ const App: React.FC = () => {
 
   const handleNextQuestion = () => {
     const nextIndex = quizState.currentIndex + 1;
-    
+
     if (nextIndex >= quizState.questions.length) {
       setQuizState(prev => ({ ...prev, isFinished: true }));
       return;
@@ -213,139 +215,155 @@ const App: React.FC = () => {
   // --- Flashcard Logic ---
 
   const handleFlashcardResult = (result: 'learned' | 'review') => {
-      const currentCard = flashcardQueue[0];
-      const remaining = flashcardQueue.slice(1);
+    const currentCard = flashcardQueue[0];
+    const remaining = flashcardQueue.slice(1);
 
-      if (result === 'learned') {
-          // Remove from deck
-          setFlashcardQueue(remaining);
-          setLearnedCount(prev => prev + 1);
-          updateFlashcardProgress(); // Persist
-      } else {
-          // Move to end of deck
-          setFlashcardQueue([...remaining, currentCard]);
-      }
+    if (result === 'learned') {
+      // Remove from deck
+      setFlashcardQueue(remaining);
+      setLearnedCount(prev => prev + 1);
+      updateFlashcardProgress(); // Persist
+    } else {
+      // Move to end of deck
+      setFlashcardQueue([...remaining, currentCard]);
+    }
   };
 
   // Determine current question for AI Tutor
-  const currentQuestionForTutor = view === 'quiz' 
+  const currentQuestionForTutor = view === 'quiz'
     ? quizState.questions[quizState.currentIndex]
     : flashcardQueue[0];
-  
+
   if (isLoadingData) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+      <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
         <div className="flex flex-col items-center gap-4">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
-          <p className="text-gray-600 font-semibold">Loading Exam Database...</p>
+          <p className="text-gray-600 dark:text-gray-300 font-semibold">Loading Exam Database...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen pb-12">
+    <div className="min-h-screen pb-12 bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
       {/* Header */}
-      <div className="bg-white border-b sticky top-0 z-30">
+      <div className="bg-white dark:bg-gray-800 border-b dark:border-gray-700 sticky top-0 z-30 transition-colors duration-200">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2 cursor-pointer" onClick={() => setView('dashboard')}>
             <div className={`w-8 h-8 rounded flex items-center justify-center text-white font-bold ${view === 'flashcards' ? 'bg-purple-600' : 'bg-red-600'}`}>
               MN
             </div>
-            <span className="font-semibold text-gray-800 hidden sm:block">Sprinkler Fitter Journeyman Exam Prep</span>
+            <span className="font-semibold text-gray-800 dark:text-white hidden sm:block">Sprinkler Fitter Journeyman Exam Prep</span>
           </div>
-          
+
           {view === 'quiz' && (
-            <div className="text-sm font-medium text-gray-600">
+            <div className="text-sm font-medium text-gray-600 dark:text-gray-300">
               Q: {quizState.currentIndex + 1} / {quizState.questions.length}
             </div>
           )}
-          
+
           {view === 'flashcards' && (
-             <div className="text-sm font-medium text-gray-600">
-                 Learned in Session: {learnedCount}
-             </div>
+            <div className="text-sm font-medium text-gray-600 dark:text-gray-300">
+              Learned in Session: {learnedCount}
+            </div>
           )}
+
+          <button
+            onClick={toggleTheme}
+            className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors ml-4"
+            aria-label="Toggle Dark Mode"
+          >
+            {theme === 'light' ? (
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+              </svg>
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+              </svg>
+            )}
+          </button>
         </div>
       </div>
 
       {/* Main Content */}
       {view === 'dashboard' ? (
-        <Dashboard 
-            onStartQuiz={startQuiz} 
-            userProgress={userProgress}
-            allQuestions={allQuestions}
+        <Dashboard
+          onStartQuiz={startQuiz}
+          userProgress={userProgress}
+          allQuestions={allQuestions}
         />
       ) : (
         <div className="container mx-auto px-4 py-8">
-          
+
           {/* QUIZ VIEW */}
           {view === 'quiz' && (
-             quizState.isFinished ? (
-                <div className="max-w-md mx-auto bg-white rounded-xl shadow-lg p-8 text-center animate-fade-in">
-                  <h2 className="text-3xl font-bold text-gray-800 mb-4">Quiz Complete!</h2>
-                  <div className="text-6xl font-black text-red-600 mb-2">
-                    {quizState.questions.length > 0 
-                      ? Math.round((quizState.score / quizState.questions.length) * 100) 
-                      : 0}%
-                  </div>
-                  <p className="text-gray-600 mb-8">
-                    You got {quizState.score} out of {quizState.questions.length} questions correct.
-                  </p>
-                  <button 
-                    onClick={() => setView('dashboard')}
-                    className="w-full py-3 bg-gray-800 text-white rounded-lg font-semibold hover:bg-gray-900"
-                  >
-                    Back to Dashboard
-                  </button>
+            quizState.isFinished ? (
+              <div className="max-w-md mx-auto bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 text-center animate-fade-in transition-colors duration-200">
+                <h2 className="text-3xl font-bold text-gray-800 dark:text-white mb-4">Quiz Complete!</h2>
+                <div className="text-6xl font-black text-red-600 mb-2">
+                  {quizState.questions.length > 0
+                    ? Math.round((quizState.score / quizState.questions.length) * 100)
+                    : 0}%
                 </div>
-              ) : (
-                quizState.questions[quizState.currentIndex] && (
-                    <QuizCard 
-                      question={quizState.questions[quizState.currentIndex]}
-                      shuffledOptions={quizState.shuffledOptions}
-                      selectedOption={quizState.selectedOption}
-                      showAnswer={quizState.showAnswer}
-                      onOptionSelect={handleOptionSelect}
-                      onNext={handleNextQuestion}
-                      onExplain={() => setIsTutorOpen(true)}
-                    />
-                )
+                <p className="text-gray-600 dark:text-gray-300 mb-8">
+                  You got {quizState.score} out of {quizState.questions.length} questions correct.
+                </p>
+                <button
+                  onClick={() => setView('dashboard')}
+                  className="w-full py-3 bg-gray-800 text-white rounded-lg font-semibold hover:bg-gray-900"
+                >
+                  Back to Dashboard
+                </button>
+              </div>
+            ) : (
+              quizState.questions[quizState.currentIndex] && (
+                <QuizCard
+                  question={quizState.questions[quizState.currentIndex]}
+                  shuffledOptions={quizState.shuffledOptions}
+                  selectedOption={quizState.selectedOption}
+                  showAnswer={quizState.showAnswer}
+                  onOptionSelect={handleOptionSelect}
+                  onNext={handleNextQuestion}
+                  onExplain={() => setIsTutorOpen(true)}
+                />
               )
+            )
           )}
 
           {/* FLASHCARD VIEW */}
           {view === 'flashcards' && (
-              flashcardQueue.length === 0 ? (
-                <div className="max-w-md mx-auto bg-white rounded-xl shadow-lg p-8 text-center animate-fade-in">
-                    <div className="text-6xl mb-4">🎉</div>
-                    <h2 className="text-3xl font-bold text-gray-800 mb-4">Stack Cleared!</h2>
-                    <p className="text-gray-600 mb-8">
-                      You've reviewed all cards in this set. Great job!
-                    </p>
-                    <button 
-                      onClick={() => setView('dashboard')}
-                      className="w-full py-3 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700"
-                    >
-                      Back to Dashboard
-                    </button>
-                </div>
-              ) : (
-                  <Flashcard 
-                    question={flashcardQueue[0]}
-                    remainingCount={flashcardQueue.length}
-                    onResult={handleFlashcardResult}
-                    onExplain={() => setIsTutorOpen(true)}
-                  />
-              )
+            flashcardQueue.length === 0 ? (
+              <div className="max-w-md mx-auto bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 text-center animate-fade-in transition-colors duration-200">
+                <div className="text-6xl mb-4">🎉</div>
+                <h2 className="text-3xl font-bold text-gray-800 dark:text-white mb-4">Stack Cleared!</h2>
+                <p className="text-gray-600 dark:text-gray-300 mb-8">
+                  You've reviewed all cards in this set. Great job!
+                </p>
+                <button
+                  onClick={() => setView('dashboard')}
+                  className="w-full py-3 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700"
+                >
+                  Back to Dashboard
+                </button>
+              </div>
+            ) : (
+              <Flashcard
+                question={flashcardQueue[0]}
+                remainingCount={flashcardQueue.length}
+                onResult={handleFlashcardResult}
+                onExplain={() => setIsTutorOpen(true)}
+              />
+            )
           )}
 
           {/* SHARED AI TUTOR */}
           {currentQuestionForTutor && (
-            <AITutor 
-                currentQuestion={currentQuestionForTutor}
-                isOpen={isTutorOpen}
-                onClose={() => setIsTutorOpen(false)}
+            <AITutor
+              currentQuestion={currentQuestionForTutor}
+              isOpen={isTutorOpen}
+              onClose={() => setIsTutorOpen(false)}
             />
           )}
 
