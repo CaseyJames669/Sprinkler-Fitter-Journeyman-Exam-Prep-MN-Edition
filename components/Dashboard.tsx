@@ -55,8 +55,6 @@ const Nfpa25Icon = ({ size = 24, className = "" }: { size?: number, className?: 
 const ActionCard = ({ title, subtitle, icon: Icon, gradientClass, onClick }: any) => (
   <button 
     onClick={onClick}
-    // "group" allows us to animate child elements when hovering the parent
-    // Added hover:scale-[1.02] for subtle growth
     className={`relative overflow-hidden group text-left p-6 rounded-2xl shadow-lg transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 hover:scale-[1.02] w-full h-full flex flex-col justify-between ${gradientClass}`}
   >
     {/* Abstract Pattern Overlay */}
@@ -65,16 +63,13 @@ const ActionCard = ({ title, subtitle, icon: Icon, gradientClass, onClick }: any
     <div className="relative z-10">
       <div className="flex justify-between items-start mb-4">
         <h3 className="text-2xl font-bold text-white tracking-tight">{title}</h3>
-        {/* Glassmorphism effect on icon background */}
         <div className="bg-white/20 p-3 rounded-xl backdrop-blur-md border border-white/10 shadow-inner transition-transform duration-300 group-hover:scale-110">
           <Icon size={28} className="text-white" />
         </div>
       </div>
-      {/* Updated text opacity for better contrast against gradients */}
       <p className="text-white/95 text-sm font-medium leading-relaxed max-w-md">{subtitle}</p>
     </div>
     
-    {/* The decorative circle in the bottom right */}
     <div className="absolute -bottom-12 -right-12 w-48 h-48 bg-white/10 rounded-full group-hover:scale-125 transition-transform duration-500 ease-out" />
   </button>
 );
@@ -82,8 +77,6 @@ const ActionCard = ({ title, subtitle, icon: Icon, gradientClass, onClick }: any
 const TopicCard = ({ title, description, icon: Icon, iconColor, onClick, darkMode }: any) => (
   <button 
     onClick={onClick}
-    // Conditional styling: Checks 'darkMode' prop to switch between Slate-900 (Dark) and White (Light)
-    // Added hover:scale-[1.02] and stronger shadows for glow effect
     className={`group text-left p-6 rounded-2xl border shadow-sm transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02] relative overflow-hidden h-full flex flex-col ${
       darkMode 
         ? 'bg-slate-900 border-slate-800 hover:bg-slate-800 hover:border-slate-600 hover:shadow-2xl hover:shadow-indigo-500/20' 
@@ -91,11 +84,9 @@ const TopicCard = ({ title, description, icon: Icon, iconColor, onClick, darkMod
     }`}
   >
     <div className="flex items-start justify-between mb-4">
-      {/* Text color changes based on theme */}
       <h4 className={`text-lg font-bold ${darkMode ? 'text-slate-100' : 'text-slate-800'}`}>{title}</h4>
       <Icon className={`${iconColor} opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all duration-300`} size={22} />
     </div>
-    {/* Improved dark mode contrast: slate-300 instead of slate-400 */}
     <p className={`text-sm leading-relaxed ${darkMode ? 'text-slate-300' : 'text-slate-500'}`}>
       {description}
     </p>
@@ -111,13 +102,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onStartQuiz, onSetTargetDa
   const difficulties: DifficultyLevel[] = ['Any', 'Easy', 'Medium', 'Hard'];
   const sprinklerTypes: SprinklerType[] = ['Any', 'Standard Spray', 'Residential', 'ESFR/Storage', 'Dry/Preaction', 'General'];
 
-  // Extract unique categories dynamically from the passed prop
   const categories = useMemo(() => {
     const uniqueCats = Array.from(new Set(allQuestions.map(q => q.category))).sort();
     return ['Any', ...uniqueCats];
   }, [allQuestions]);
 
-  // Real-time counter for matching questions
   const filteredCount = useMemo(() => {
     return allQuestions.filter(q => {
         if (selectedDifficulty !== 'Any' && q.difficulty !== selectedDifficulty) return false;
@@ -137,7 +126,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ onStartQuiz, onSetTargetDa
   }, [allQuestions, selectedDifficulty, selectedSprinklerType, selectedCategory, searchTerm]);
 
   const handleStart = (mode: QuizMode) => {
-    // mnOnly passed as false, as filtering is now handled by the specific mode (MN_ONLY) or manual selection is removed
     onStartQuiz(mode, selectedDifficulty, selectedSprinklerType, selectedCategory, false, searchTerm);
   };
 
@@ -147,20 +135,32 @@ export const Dashboard: React.FC<DashboardProps> = ({ onStartQuiz, onSetTargetDa
     : 0;
 
   // Rank Calculation
-  const getRank = (count: number) => {
-    if (count < 50) return "Apprentice";
-    if (count < 150) return "Fitter";
-    if (count < 400) return "Journeyman Candidate";
-    if (count < 800) return "Journeyman";
-    return "Foreman";
-  };
-  const rank = getRank(userProgress.totalQuestionsAnswered);
+  const ranks = [
+    { name: "Apprentice", limit: 50 },
+    { name: "Fitter", limit: 150 },
+    { name: "Journeyman Candidate", limit: 400 },
+    { name: "Journeyman", limit: 800 },
+    { name: "Foreman", limit: Infinity }
+  ];
+  
+  const currentRankObj = ranks.find(r => userProgress.totalQuestionsAnswered < r.limit) || ranks[ranks.length - 1];
+  const nextRankObj = ranks[ranks.indexOf(currentRankObj) + 1] || null;
+  
+  // Calculate progress to next rank
+  const prevLimit = ranks[ranks.indexOf(currentRankObj) - 1]?.limit || 0;
+  const rankProgressTotal = (nextRankObj?.limit || userProgress.totalQuestionsAnswered) - prevLimit;
+  const rankProgressCurrent = userProgress.totalQuestionsAnswered - prevLimit;
+  const rankPercentage = nextRankObj ? Math.min(100, Math.max(0, (rankProgressCurrent / rankProgressTotal) * 100)) : 100;
+
+  const rank = currentRankObj.name;
   const level = Math.floor(userProgress.totalQuestionsAnswered / 25) + 1;
 
   // Circular Progress Logic (r=28, C ~ 175.9)
   const circleRadius = 28;
   const circleCircumference = 2 * Math.PI * circleRadius;
   const strokeDashoffset = circleCircumference - (circleCircumference * accuracy) / 100;
+
+  const missedCount = userProgress.missedQuestionIds ? userProgress.missedQuestionIds.length : 0;
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-10">
@@ -173,57 +173,79 @@ export const Dashboard: React.FC<DashboardProps> = ({ onStartQuiz, onSetTargetDa
         </p>
       </div>
 
-      {/* NEW: Exam Tracker & Countdown */}
       <ExamTracker 
         targetDate={userProgress.targetExamDate} 
         onSetTargetDate={onSetTargetDate}
       />
 
-      {/* Modernized Exam Readiness HUD */}
+      {/* UPDATED: Exam Readiness HUD */}
       <div className="relative group mb-10">
           {/* Outer Glow */}
-          <div className="absolute -inset-0.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-2xl opacity-30 blur-lg group-hover:opacity-50 transition duration-1000"></div>
+          <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 rounded-2xl opacity-40 blur-lg group-hover:opacity-60 transition duration-1000"></div>
           
           <div className="relative bg-slate-900 border border-slate-800 rounded-2xl p-6 md:p-8 shadow-2xl overflow-hidden">
-            {/* Background Texture & Orbs */}
-            <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-600/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
-            <div className="absolute bottom-0 left-0 w-64 h-64 bg-red-600/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2"></div>
-            {/* Grid Pattern */}
-            <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:40px_40px] pointer-events-none"></div>
-
+            {/* Glass overlay */}
+            <div className="absolute inset-0 bg-white/5 backdrop-blur-[1px]"></div>
+            
+            {/* Background Texture */}
+            <div className="absolute top-0 right-0 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
+            <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/3"></div>
+            
             <div className="relative z-10">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-                    <div>
-                        <h2 className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 flex items-center gap-2">
-                             <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
-                             Current Status
-                        </h2>
-                        <div className="flex items-center gap-3">
-                             <h3 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-400">
-                                 {rank}
-                             </h3>
-                             <div className="px-3 py-1 bg-slate-800 rounded-full border border-slate-700 text-xs font-bold text-indigo-400 shadow-sm flex items-center gap-1">
-                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                 </svg>
-                                 Level {level}
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 border-b border-slate-800/50 pb-6">
+                    <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                             <span className="px-2 py-1 rounded bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 text-[10px] font-bold uppercase tracking-widest">
+                                 Current Rank
+                             </span>
+                             <div className="flex items-center gap-1 text-emerald-400 text-xs font-bold">
+                                <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
+                                Active Session
                              </div>
                         </div>
+                        <div className="flex items-baseline gap-4">
+                             <h3 className="text-4xl font-black text-white tracking-tight">
+                                 {rank}
+                             </h3>
+                             <span className="text-slate-400 text-lg font-semibold">Level {level}</span>
+                        </div>
+                        
+                        {/* XP / Rank Progress Bar */}
+                        <div className="mt-4 max-w-md">
+                            <div className="flex justify-between text-xs text-slate-400 mb-1 font-medium">
+                                <span>Progress to {nextRankObj ? nextRankObj.name : 'Max Rank'}</span>
+                                <span>{Math.round(rankPercentage)}%</span>
+                            </div>
+                            <div className="h-2 w-full bg-slate-800 rounded-full overflow-hidden border border-slate-700">
+                                <div 
+                                    className="h-full bg-gradient-to-r from-indigo-500 to-blue-500 transition-all duration-1000 ease-out"
+                                    style={{ width: `${rankPercentage}%` }}
+                                ></div>
+                            </div>
+                        </div>
                     </div>
-                    <div className="flex items-center gap-2 text-xs font-medium text-slate-400 bg-slate-950/50 px-3 py-2 rounded-lg border border-white/5 backdrop-blur-sm shadow-inner">
-                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
-                        Progress Auto-Saves
+                    
+                    <div className="flex gap-2">
+                        <div className="text-right">
+                             <div className="text-xs text-slate-400 font-bold uppercase tracking-wider">Total Questions</div>
+                             <div className="text-2xl font-bold text-white">{userProgress.totalQuestionsAnswered}</div>
+                        </div>
+                        <div className="w-px bg-slate-700 mx-2"></div>
+                        <div className="text-right">
+                             <div className="text-xs text-slate-400 font-bold uppercase tracking-wider">Accuracy</div>
+                             <div className={`text-2xl font-bold ${accuracy >= 70 ? 'text-emerald-400' : 'text-amber-400'}`}>{accuracy}%</div>
+                        </div>
                     </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-                    {/* Accuracy Card */}
-                    <div className="bg-slate-800/40 rounded-xl p-4 border border-slate-700/50 flex items-center gap-4 relative overflow-hidden group/item hover:bg-slate-800/60 hover:border-slate-600 transition-all">
+                    {/* Accuracy Visual */}
+                    <div className="bg-slate-800/60 rounded-xl p-4 border border-slate-700/50 flex items-center gap-4 relative overflow-hidden group/item hover:bg-slate-800 transition-all">
                          <div className="relative flex-shrink-0">
                             <svg className="w-16 h-16 transform -rotate-90">
-                                <circle cx="32" cy="32" r={circleRadius} stroke="currentColor" strokeWidth="5" fill="transparent" className="text-slate-700/50" />
-                                <circle cx="32" cy="32" r={circleRadius} stroke="currentColor" strokeWidth="5" fill="transparent" 
-                                    className={`${accuracy > 70 ? 'text-emerald-500' : accuracy > 40 ? 'text-amber-500' : 'text-red-500'} transition-all duration-1000 ease-out`}
+                                <circle cx="32" cy="32" r={circleRadius} stroke="currentColor" strokeWidth="4" fill="transparent" className="text-slate-700" />
+                                <circle cx="32" cy="32" r={circleRadius} stroke="currentColor" strokeWidth="4" fill="transparent" 
+                                    className={`${accuracy > 70 ? 'text-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]' : accuracy > 40 ? 'text-amber-500' : 'text-red-500'} transition-all duration-1000 ease-out`}
                                     strokeDasharray={circleCircumference} 
                                     strokeDashoffset={strokeDashoffset} 
                                     strokeLinecap="round"
@@ -234,43 +256,74 @@ export const Dashboard: React.FC<DashboardProps> = ({ onStartQuiz, onSetTargetDa
                             </div>
                          </div>
                          <div>
-                             <div className="text-xs text-slate-400 font-bold uppercase tracking-wider mb-0.5">Performance</div>
-                             <div className="text-white font-medium text-sm">Overall Accuracy</div>
-                             <div className="text-xs text-slate-500 mt-0.5">{userProgress.totalCorrect} Correct Answers</div>
+                             <div className="text-white font-bold text-sm">Exam Probability</div>
+                             <div className="text-xs text-slate-400 mt-1 leading-tight">Based on your current answer streaks.</div>
                          </div>
                     </div>
 
-                    {/* Total Questions Card */}
-                    <div className="bg-slate-800/40 rounded-xl p-4 border border-slate-700/50 flex items-center gap-4 relative overflow-hidden group/item hover:bg-slate-800/60 hover:border-slate-600 transition-all">
-                        <div className="absolute right-0 top-0 w-24 h-full bg-blue-500/5 skew-x-12 translate-x-10 group-hover/item:translate-x-0 transition-transform duration-500"></div>
-                        <div className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-500/20 to-blue-600/5 flex items-center justify-center text-blue-400 border border-blue-500/20">
+                    {/* Mastery Card */}
+                    <div className="bg-slate-800/60 rounded-xl p-4 border border-slate-700/50 flex items-center gap-4 relative overflow-hidden group/item hover:bg-slate-800 transition-all">
+                        <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-violet-600 to-purple-700 flex items-center justify-center text-white shadow-lg shadow-purple-500/20">
                              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                              </svg>
                         </div>
                         <div>
-                             <div className="text-2xl font-bold text-white leading-none mb-1">{userProgress.totalQuestionsAnswered}</div>
-                             <div className="text-sm text-slate-400 font-medium">Questions Taken</div>
+                             <div className="text-2xl font-bold text-white leading-none mb-1">{userProgress.flashcardsLearned}</div>
+                             <div className="text-xs text-slate-400 font-bold uppercase tracking-wider">Concepts Mastered</div>
                         </div>
                     </div>
 
-                    {/* Mastered/Flashcards Card */}
-                    <div className="bg-slate-800/40 rounded-xl p-4 border border-slate-700/50 flex items-center gap-4 relative overflow-hidden group/item hover:bg-slate-800/60 hover:border-slate-600 transition-all">
-                        <div className="absolute right-0 top-0 w-24 h-full bg-violet-500/5 skew-x-12 translate-x-10 group-hover/item:translate-x-0 transition-transform duration-500"></div>
-                         <div className="w-14 h-14 rounded-full bg-gradient-to-br from-violet-500/20 to-violet-600/5 flex items-center justify-center text-violet-400 border border-violet-500/20">
+                    {/* Streak Card */}
+                    <div className="bg-slate-800/60 rounded-xl p-4 border border-slate-700/50 flex items-center gap-4 relative overflow-hidden group/item hover:bg-slate-800 transition-all">
+                        <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center text-white shadow-lg shadow-orange-500/20">
                              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                              </svg>
                         </div>
                         <div>
-                             <div className="text-2xl font-bold text-white leading-none mb-1">{userProgress.flashcardsLearned}</div>
-                             <div className="text-sm text-slate-400 font-medium">Concepts Mastered</div>
+                             <div className="text-2xl font-bold text-white leading-none mb-1">{userProgress.totalCorrect}</div>
+                             <div className="text-xs text-slate-400 font-bold uppercase tracking-wider">Correct Answers</div>
                         </div>
                     </div>
                 </div>
             </div>
           </div>
       </div>
+
+      {/* Missed Questions Alert Section - Shows ONLY if there are missed questions */}
+      {missedCount > 0 && (
+        <div className="mb-10 animate-fade-in">
+           <button 
+             onClick={() => onStartQuiz(QuizMode.MISSED, 'Any', 'Any', 'Any', false, '')}
+             className="w-full bg-gradient-to-r from-orange-500 to-red-500 p-1 rounded-2xl shadow-xl hover:shadow-2xl hover:scale-[1.01] transition-all duration-300 group"
+           >
+              <div className="bg-white dark:bg-slate-900 rounded-xl p-5 flex flex-col md:flex-row items-center justify-between gap-4 h-full relative overflow-hidden">
+                   {/* Background Pattern */}
+                   <div className="absolute right-0 top-0 w-64 h-64 bg-orange-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 group-hover:bg-orange-500/20 transition-colors"></div>
+                   
+                   <div className="flex items-center gap-4 relative z-10">
+                      <div className="w-14 h-14 bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 rounded-full flex items-center justify-center shrink-0">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                          </svg>
+                      </div>
+                      <div className="text-left">
+                          <h3 className="text-xl font-bold text-slate-900 dark:text-white">Needs Review: {missedCount} Missed Questions</h3>
+                          <p className="text-slate-500 dark:text-slate-400 text-sm">You have {missedCount} questions in your backlog. Retrying them is the best way to improve your score.</p>
+                      </div>
+                   </div>
+
+                   <div className="flex items-center gap-2 bg-orange-500 text-white px-6 py-3 rounded-lg font-bold shadow-lg shadow-orange-500/30 group-hover:bg-orange-600 transition-colors">
+                       Review Now
+                       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                           <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 1.414L10.586 9H7a1 1 0 100 2h3.586l-1.293 1.293a1 1 0 101.414 1.414l3-3a1 1 0 000-1.414z" clipRule="evenodd" />
+                       </svg>
+                   </div>
+              </div>
+           </button>
+        </div>
+      )}
 
       {/* Study Filters - Professional Bar Layout */}
       <div className="mb-10">
@@ -282,7 +335,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ onStartQuiz, onSetTargetDa
                     </svg>
                     Study Configuration
                 </h2>
-                {/* Live Counter Badge */}
                 <span className={`text-xs font-bold px-2 py-0.5 rounded-full transition-colors ${filteredCount === 0 ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-300' : 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-300'}`}>
                     {filteredCount} Questions Available
                 </span>
@@ -308,7 +360,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onStartQuiz, onSetTargetDa
         
         <div className="bg-white dark:bg-slate-900 p-1 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm grid grid-cols-1 md:grid-cols-4 gap-1">
             
-            {/* Search Bar - Spans 1 column (or full row on mobile) */}
+            {/* Search Bar */}
             <div className="relative group md:col-span-1">
                  <label className="absolute top-2 left-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider z-10">Search</label>
                  <input
@@ -372,7 +424,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onStartQuiz, onSetTargetDa
         </div>
       </div>
 
-      {/* Row 1: Primary Actions (Updated to 3 columns) */}
+      {/* Row 1: Primary Actions */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <ActionCard
           title="Fast 10"
@@ -397,7 +449,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onStartQuiz, onSetTargetDa
         />
       </div>
 
-      {/* Row 2: Secondary Topics (Split into thirds on desktop) */}
+      {/* Row 2: Secondary Topics */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <TopicCard
           title="MN Amendments"

@@ -26,7 +26,8 @@ export enum QuizMode {
   NFPA25 = 'NFPA25',
   NFPA13 = 'NFPA13',
   FLASHCARDS = 'FLASHCARDS',
-  FAST_10 = 'FAST_10'
+  FAST_10 = 'FAST_10',
+  MISSED = 'MISSED'
 }
 
 export interface ChatMessage {
@@ -58,6 +59,7 @@ export interface UserProgress {
   flashcardsLearned: number;
   statsByCategory: Record<string, CategoryStats>;
   targetExamDate?: string | null; // ISO Date string
+  missedQuestionIds: number[];
 }
 
 export interface ExamSchedule {

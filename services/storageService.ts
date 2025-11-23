@@ -8,7 +8,8 @@ const DEFAULT_PROGRESS: UserProgress = {
   totalCorrect: 0,
   flashcardsLearned: 0,
   statsByCategory: {},
-  targetExamDate: null
+  targetExamDate: null,
+  missedQuestionIds: []
 };
 
 export const loadProgress = (): UserProgress => {
@@ -37,6 +38,11 @@ export const loadProgress = (): UserProgress => {
 
           // lastAnsweredDate will remain undefined for old records until updated
         });
+      }
+
+      // Ensure missedQuestionIds exists (migration)
+      if (!parsed.missedQuestionIds) {
+        parsed.missedQuestionIds = [];
       }
 
       // Merge with default to ensure new fields exist if schema changes

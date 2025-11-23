@@ -81,9 +81,10 @@ const App: React.FC = () => {
     fetchQuestions();
   }, []);
 
-  const updateQuizProgress = (isCorrect: boolean, category: string) => {
+  const updateQuizProgress = (isCorrect: boolean, question: Question) => {
     setUserProgress(prev => {
       const newStats = { ...prev.statsByCategory };
+      const category = question.category;
       
       // Retrieve existing stats or default, ensure fields exist for backward compatibility if loaded raw
       const prevCatStats = newStats[category] || { answered: 0, correct: 0, streak: 0, masteryLevel: 0 };
@@ -106,11 +107,24 @@ const App: React.FC = () => {
 
       newStats[category] = updatedCatStats;
 
+      // Handle Missed Questions List
+      let newMissedIds = [...(prev.missedQuestionIds || [])];
+      if (!isCorrect) {
+        // Add to missed list if not already there
+        if (!newMissedIds.includes(question.id)) {
+          newMissedIds.push(question.id);
+        }
+      } else {
+        // Remove from missed list if correct
+        newMissedIds = newMissedIds.filter(id => id !== question.id);
+      }
+
       const newProgress = {
         ...prev,
         totalQuestionsAnswered: prev.totalQuestionsAnswered + 1,
         totalCorrect: prev.totalCorrect + (isCorrect ? 1 : 0),
-        statsByCategory: newStats
+        statsByCategory: newStats,
+        missedQuestionIds: newMissedIds
       };
       saveProgress(newProgress);
       return newProgress;
@@ -153,6 +167,9 @@ const App: React.FC = () => {
       case QuizMode.FAST_10:
         // Start with all questions for Fast 10, filters below will still apply if set by user
         filtered = allQuestions;
+        break;
+      case QuizMode.MISSED:
+        filtered = allQuestions.filter(q => userProgress.missedQuestionIds.includes(q.id));
         break;
       default:
         filtered = allQuestions;
@@ -198,7 +215,11 @@ const App: React.FC = () => {
 
     // Fallback if no questions match filters
     if (filtered.length === 0) {
-      alert(`No questions found matching your criteria. Try adjusting your search or filters.`);
+      if (mode === QuizMode.MISSED) {
+         alert("Great job! You have no missed questions to review.");
+      } else {
+         alert(`No questions found matching your criteria. Try adjusting your search or filters.`);
+      }
       return; // Do not start empty quiz
     }
 
@@ -257,7 +278,7 @@ const App: React.FC = () => {
     }));
 
     // Update global progress
-    updateQuizProgress(isCorrect, currentQ.category);
+    updateQuizProgress(isCorrect, currentQ);
   };
 
   const handleNextQuestion = () => {

@@ -59,3 +59,26 @@ export const askTutor = async (userQuery: string, currentQuestion?: Question): P
     return "I'm having trouble connecting to the code books right now. Please try again later.";
   }
 };
+
+export const transcribeAudio = async (audioBase64: string, mimeType: string = 'audio/webm'): Promise<string> => {
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: {
+        parts: [
+          {
+            inlineData: {
+              mimeType: mimeType,
+              data: audioBase64
+            }
+          },
+          { text: "Transcribe this audio exactly. Return only the text, no explanation." }
+        ]
+      }
+    });
+    return response.text || "";
+  } catch (error) {
+    console.error("Transcription Error:", error);
+    return ""; // Return empty string on error so UI can handle it
+  }
+};

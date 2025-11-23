@@ -1,6 +1,7 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Question, ChatMessage } from '../types';
-import { askTutor } from '../services/geminiService';
+import { askTutor, transcribeAudio } from '../services/geminiService';
 
 interface AITutorProps {
   currentQuestion: Question;
@@ -14,6 +15,8 @@ export const AITutor: React.FC<AITutorProps> = ({ currentQuestion, isOpen, onClo
   ]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -54,6 +57,67 @@ export const AITutor: React.FC<AITutorProps> = ({ currentQuestion, isOpen, onClo
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
+    }
+  };
+
+  const toggleRecording = async () => {
+    if (isRecording) {
+      stopRecording();
+    } else {
+      await startRecording();
+    }
+  };
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      const chunks: BlobPart[] = [];
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunks.push(e.data);
+      };
+
+      mediaRecorder.onstop = async () => {
+        const blob = new Blob(chunks, { type: 'audio/webm' });
+        
+        // Stop all tracks to release microphone
+        stream.getTracks().forEach(track => track.stop());
+        
+        // Process audio
+        setIsLoading(true);
+        try {
+            const reader = new FileReader();
+            reader.readAsDataURL(blob);
+            reader.onloadend = async () => {
+                const base64data = reader.result as string;
+                const base64Content = base64data.split(',')[1];
+                const transcribedText = await transcribeAudio(base64Content, blob.type);
+                
+                if (transcribedText) {
+                    setInput(transcribedText.trim());
+                }
+                setIsLoading(false);
+            };
+        } catch (err) {
+            console.error("Error processing audio", err);
+            setIsLoading(false);
+        }
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+    } catch (err) {
+      console.error("Error accessing microphone:", err);
+      alert("Could not access microphone. Please ensure permissions are granted.");
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
     }
   };
 
@@ -115,20 +179,38 @@ export const AITutor: React.FC<AITutorProps> = ({ currentQuestion, isOpen, onClo
 
         {/* Input Area */}
         <div className="p-4 bg-white dark:bg-gray-800 border-t dark:border-gray-700">
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-end">
+             <button
+                onClick={toggleRecording}
+                disabled={isLoading}
+                className={`p-3 rounded-lg transition-all duration-200 flex items-center justify-center ${
+                  isRecording 
+                    ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 animate-pulse ring-2 ring-red-500' 
+                    : 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300'
+                }`}
+                title="Speak"
+             >
+               {isRecording ? (
+                  <div className="w-5 h-5 bg-red-500 rounded-sm" /> // Stop icon
+               ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z" clipRule="evenodd" />
+                  </svg>
+               )}
+             </button>
             <input
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Ask about codes, math, or why this answer is correct..."
-              className="flex-1 p-3 border dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 outline-none"
-              disabled={isLoading}
+              placeholder={isRecording ? "Listening..." : "Ask a question..."}
+              className="flex-1 p-3 border dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 outline-none transition-all"
+              disabled={isLoading || isRecording}
             />
             <button
               onClick={handleSend}
-              disabled={isLoading || !input.trim()}
-              className="bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white p-3 rounded-lg transition-colors"
+              disabled={isLoading || !input.trim() || isRecording}
+              className="bg-purple-600 hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-white p-3 rounded-lg transition-colors"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                 <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
