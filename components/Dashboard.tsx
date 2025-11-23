@@ -38,8 +38,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onStartQuiz, userProgress,
           Sprinkler Fitter <span className="text-red-600">Journeyman Exam Prep</span>
         </h1>
         <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-          Master NFPA 13, 13R, 13D, 14, 20, 24, 25 and Minnesota State Amendments and Statutes with our AI-powered study companion. 
-          Database loaded with {allQuestions.length} specific exam questions.
+          Conquer the Minnesota Journeyman Exam. Master NFPA 13, 13R, 13D, 14, 20, 24, 25 & State Statutes with {allQuestions.length}+ targeted questions and AI-driven study tools. 
         </p>
       </div>
 
