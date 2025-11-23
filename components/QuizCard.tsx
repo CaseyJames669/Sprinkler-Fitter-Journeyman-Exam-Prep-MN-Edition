@@ -76,7 +76,7 @@ export const QuizCard: React.FC<QuizCardProps> = ({
       textToRead += `The correct answer is ${question.answer}. `;
     }
     
-    textToRead += `Explanation: ${question.code_text}`;
+    textToRead += `Tutor's Explanation: ${question.code_text}`;
     speakText(textToRead);
   };
 

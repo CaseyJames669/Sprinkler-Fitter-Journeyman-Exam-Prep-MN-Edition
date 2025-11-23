@@ -7,15 +7,14 @@ interface ExamTrackerProps {
   onSetTargetDate: (date: string | null) => void;
 }
 
-// MOCK SCHEDULE DATA - In a real app, fetch this from an API
-// Dates generated for 2024-2025 based on typical quarterly schedules
+// MOCK SCHEDULE DATA - Updated for 2025-2026
 const EXAM_SCHEDULE: ExamSchedule[] = [
-  { id: '1', date: '2024-06-15', deadline: '2024-05-30', location: 'St. Paul, MN' },
-  { id: '2', date: '2024-09-18', deadline: '2024-09-01', location: 'St. Paul, MN' },
-  { id: '3', date: '2024-12-12', deadline: '2024-11-25', location: 'Duluth, MN' },
-  { id: '4', date: '2025-03-20', deadline: '2025-03-05', location: 'St. Paul, MN' },
-  { id: '5', date: '2025-06-18', deadline: '2025-06-01', location: 'St. Paul, MN' },
-  { id: '6', date: '2025-09-22', deadline: '2025-09-05', location: 'Rochester, MN' },
+  { id: '1', date: '2025-06-15', deadline: '2025-05-30', location: 'St. Paul, MN' },
+  { id: '2', date: '2025-09-18', deadline: '2025-09-01', location: 'St. Paul, MN' },
+  { id: '3', date: '2025-12-12', deadline: '2025-11-25', location: 'Duluth, MN' },
+  { id: '4', date: '2026-03-20', deadline: '2026-03-05', location: 'St. Paul, MN' },
+  { id: '5', date: '2026-06-18', deadline: '2026-06-01', location: 'St. Paul, MN' },
+  { id: '6', date: '2026-09-22', deadline: '2026-09-05', location: 'Rochester, MN' },
 ];
 
 export const ExamTracker: React.FC<ExamTrackerProps> = ({ targetDate, onSetTargetDate }) => {
@@ -53,9 +52,10 @@ export const ExamTracker: React.FC<ExamTrackerProps> = ({ targetDate, onSetTarge
 
     setTimeLeft(calculateTimeLeft());
 
+    // Update every second for dynamic feel
     const timer = setInterval(() => {
       setTimeLeft(calculateTimeLeft());
-    }, 60000); // Update every minute
+    }, 1000);
 
     return () => clearInterval(timer);
   }, [targetDate]);
@@ -74,7 +74,7 @@ export const ExamTracker: React.FC<ExamTrackerProps> = ({ targetDate, onSetTarge
     // --- MODE 1: COUNTDOWN ACTIVE ---
     return (
       <div className="mb-10 bg-slate-900 rounded-3xl p-1 shadow-2xl overflow-hidden relative border border-slate-700">
-        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-500 via-orange-500 to-yellow-500 animate-gradient-x"></div>
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-500 via-orange-500 to-yellow-500"></div>
         
         <div className="bg-slate-900 rounded-[22px] p-6 md:p-8 relative overflow-hidden">
            {/* Background decorative glow */}
@@ -99,16 +99,16 @@ export const ExamTracker: React.FC<ExamTrackerProps> = ({ targetDate, onSetTarge
 
                 {/* The Timer */}
                 <div className="flex gap-4 text-center">
-                    <div className="bg-slate-800 border border-slate-700 p-4 rounded-xl min-w-[80px]">
-                        <span className="block text-3xl md:text-4xl font-black text-white">{timeLeft.days}</span>
+                    <div className="bg-slate-800 border border-slate-700 p-4 rounded-xl min-w-[80px] shadow-lg">
+                        <span className="block text-3xl md:text-4xl font-black text-white tabular-nums">{timeLeft.days}</span>
                         <span className="text-xs text-slate-400 font-bold uppercase">Days</span>
                     </div>
-                    <div className="bg-slate-800 border border-slate-700 p-4 rounded-xl min-w-[80px]">
-                        <span className="block text-3xl md:text-4xl font-black text-white">{timeLeft.hours}</span>
+                    <div className="bg-slate-800 border border-slate-700 p-4 rounded-xl min-w-[80px] shadow-lg">
+                        <span className="block text-3xl md:text-4xl font-black text-white tabular-nums">{timeLeft.hours}</span>
                         <span className="text-xs text-slate-400 font-bold uppercase">Hrs</span>
                     </div>
-                    <div className="bg-slate-800 border border-slate-700 p-4 rounded-xl min-w-[80px]">
-                        <span className="block text-3xl md:text-4xl font-black text-white">{timeLeft.minutes}</span>
+                    <div className="bg-slate-800 border border-slate-700 p-4 rounded-xl min-w-[80px] shadow-lg">
+                        <span className="block text-3xl md:text-4xl font-black text-white tabular-nums">{timeLeft.minutes}</span>
                         <span className="text-xs text-slate-400 font-bold uppercase">Mins</span>
                     </div>
                 </div>

@@ -55,7 +55,7 @@ export const Flashcard: React.FC<FlashcardProps> = ({
   };
 
   const handleSpeakBack = (e: React.MouseEvent) => {
-    const text = `The answer is ${question.answer}. Reference: ${question.code_text}`;
+    const text = `The answer is ${question.answer}. Tutor's Explanation: ${question.code_text}`;
     speakText(text, e);
   };
 
@@ -158,10 +158,17 @@ export const Flashcard: React.FC<FlashcardProps> = ({
               </div>
 
               <div className="space-y-4">
-                <div className="bg-white dark:bg-slate-700/50 p-4 rounded-xl shadow-sm border border-indigo-100 dark:border-slate-600">
-                  <h5 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Code Reference</h5>
-                  <p className="text-sm font-mono text-slate-700 dark:text-slate-200">{question.citation}</p>
-                  <p className="text-sm italic text-slate-600 dark:text-slate-300 mt-1">"{question.code_text}"</p>
+                <div className="bg-white/60 dark:bg-black/20 rounded-lg p-4 text-sm text-slate-700 dark:text-slate-300 border border-slate-100 dark:border-slate-600">
+                    <div className="flex items-center gap-2 mb-2 text-[10px] font-bold uppercase tracking-wider opacity-70 text-indigo-900 dark:text-indigo-300">
+                           <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                           </svg>
+                           Tutor's Explanation
+                    </div>
+                    <p className="leading-relaxed italic">"{question.code_text}"</p>
+                    <div className="mt-2 text-xs font-mono text-slate-500 dark:text-slate-400 text-right">
+                       Ref: {question.citation}
+                    </div>
                 </div>
 
                 {question.mnemonic && (

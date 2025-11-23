@@ -35,8 +35,6 @@ export const loadProgress = (): UserProgress => {
               ? Math.round((stat.correct / stat.answered) * 100) 
               : 0;
           }
-
-          // lastAnsweredDate will remain undefined for old records until updated
         });
       }
 

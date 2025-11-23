@@ -110,8 +110,19 @@ export const Dashboard: React.FC<DashboardProps> = ({ onStartQuiz, onSetTargetDa
   const filteredCount = useMemo(() => {
     return allQuestions.filter(q => {
         if (selectedDifficulty !== 'Any' && q.difficulty !== selectedDifficulty) return false;
-        if (selectedSprinklerType !== 'Any' && q.sprinklerType !== selectedSprinklerType) return false;
+        
+        // Handle Sprinkler Type filtering with mapping for 'General' -> 'N/A'
+        if (selectedSprinklerType !== 'Any') {
+             if (selectedSprinklerType === 'General') {
+                 // The dataset uses "N/A" for general questions, or sometimes empty/null
+                 if (q.sprinklerType !== 'General' && q.sprinklerType !== 'N/A' && q.sprinklerType) return false;
+             } else {
+                 if (q.sprinklerType !== selectedSprinklerType) return false;
+             }
+        }
+        
         if (selectedCategory !== 'Any' && q.category !== selectedCategory) return false;
+        
         if (searchTerm) {
              const lower = searchTerm.toLowerCase();
              return (
