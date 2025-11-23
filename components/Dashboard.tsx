@@ -1,17 +1,112 @@
+
 import React, { useState, useMemo } from 'react';
 import { QuizMode, DifficultyLevel, SprinklerType, UserProgress, Question } from '../types';
+import { ExamTracker } from './ExamTracker';
 
 interface DashboardProps {
-  onStartQuiz: (mode: QuizMode, difficulty: DifficultyLevel, sprinklerType: SprinklerType, category: string, mnOnly: boolean) => void;
+  onStartQuiz: (mode: QuizMode, difficulty: DifficultyLevel, sprinklerType: SprinklerType, category: string, mnOnly: boolean, searchTerm: string) => void;
+  onSetTargetDate: (date: string | null) => void;
   userProgress: UserProgress;
   allQuestions: Question[];
+  darkMode: boolean;
 }
 
-export const Dashboard: React.FC<DashboardProps> = ({ onStartQuiz, userProgress, allQuestions }) => {
+// --- Icons ---
+
+const FlashcardsIcon = ({ size = 24, className = "" }: { size?: number, className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+  </svg>
+);
+
+const QuizIcon = ({ size = 24, className = "" }: { size?: number, className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+  </svg>
+);
+
+const FastIcon = ({ size = 24, className = "" }: { size?: number, className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+  </svg>
+);
+
+const MnIcon = ({ size = 24, className = "" }: { size?: number, className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+  </svg>
+);
+
+const HydraulicsIcon = ({ size = 24, className = "" }: { size?: number, className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+  </svg>
+);
+
+const Nfpa25Icon = ({ size = 24, className = "" }: { size?: number, className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>
+);
+
+// --- Card Components ---
+
+const ActionCard = ({ title, subtitle, icon: Icon, gradientClass, onClick }: any) => (
+  <button 
+    onClick={onClick}
+    // "group" allows us to animate child elements when hovering the parent
+    // Added hover:scale-[1.02] for subtle growth
+    className={`relative overflow-hidden group text-left p-6 rounded-2xl shadow-lg transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 hover:scale-[1.02] w-full h-full flex flex-col justify-between ${gradientClass}`}
+  >
+    {/* Abstract Pattern Overlay */}
+    <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl pointer-events-none"></div>
+    
+    <div className="relative z-10">
+      <div className="flex justify-between items-start mb-4">
+        <h3 className="text-2xl font-bold text-white tracking-tight">{title}</h3>
+        {/* Glassmorphism effect on icon background */}
+        <div className="bg-white/20 p-3 rounded-xl backdrop-blur-md border border-white/10 shadow-inner transition-transform duration-300 group-hover:scale-110">
+          <Icon size={28} className="text-white" />
+        </div>
+      </div>
+      {/* Updated text opacity for better contrast against gradients */}
+      <p className="text-white/95 text-sm font-medium leading-relaxed max-w-md">{subtitle}</p>
+    </div>
+    
+    {/* The decorative circle in the bottom right */}
+    <div className="absolute -bottom-12 -right-12 w-48 h-48 bg-white/10 rounded-full group-hover:scale-125 transition-transform duration-500 ease-out" />
+  </button>
+);
+
+const TopicCard = ({ title, description, icon: Icon, iconColor, onClick, darkMode }: any) => (
+  <button 
+    onClick={onClick}
+    // Conditional styling: Checks 'darkMode' prop to switch between Slate-900 (Dark) and White (Light)
+    // Added hover:scale-[1.02] and stronger shadows for glow effect
+    className={`group text-left p-6 rounded-2xl border shadow-sm transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02] relative overflow-hidden h-full flex flex-col ${
+      darkMode 
+        ? 'bg-slate-900 border-slate-800 hover:bg-slate-800 hover:border-slate-600 hover:shadow-2xl hover:shadow-indigo-500/20' 
+        : 'bg-white border-slate-100 hover:bg-white hover:border-slate-300 hover:shadow-xl hover:shadow-slate-300/50'
+    }`}
+  >
+    <div className="flex items-start justify-between mb-4">
+      {/* Text color changes based on theme */}
+      <h4 className={`text-lg font-bold ${darkMode ? 'text-slate-100' : 'text-slate-800'}`}>{title}</h4>
+      <Icon className={`${iconColor} opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all duration-300`} size={22} />
+    </div>
+    {/* Improved dark mode contrast: slate-300 instead of slate-400 */}
+    <p className={`text-sm leading-relaxed ${darkMode ? 'text-slate-300' : 'text-slate-500'}`}>
+      {description}
+    </p>
+  </button>
+);
+
+export const Dashboard: React.FC<DashboardProps> = ({ onStartQuiz, onSetTargetDate, userProgress, allQuestions, darkMode }) => {
   const [selectedDifficulty, setSelectedDifficulty] = useState<DifficultyLevel>('Any');
   const [selectedSprinklerType, setSelectedSprinklerType] = useState<SprinklerType>('Any');
   const [selectedCategory, setSelectedCategory] = useState<string>('Any');
-  const [mnOnly, setMnOnly] = useState<boolean>(false);
+  const [searchTerm, setSearchTerm] = useState<string>('');
 
   const difficulties: DifficultyLevel[] = ['Any', 'Easy', 'Medium', 'Hard'];
   const sprinklerTypes: SprinklerType[] = ['Any', 'Standard Spray', 'Residential', 'ESFR/Storage', 'Dry/Preaction', 'General'];
@@ -22,8 +117,28 @@ export const Dashboard: React.FC<DashboardProps> = ({ onStartQuiz, userProgress,
     return ['Any', ...uniqueCats];
   }, [allQuestions]);
 
+  // Real-time counter for matching questions
+  const filteredCount = useMemo(() => {
+    return allQuestions.filter(q => {
+        if (selectedDifficulty !== 'Any' && q.difficulty !== selectedDifficulty) return false;
+        if (selectedSprinklerType !== 'Any' && q.sprinklerType !== selectedSprinklerType) return false;
+        if (selectedCategory !== 'Any' && q.category !== selectedCategory) return false;
+        if (searchTerm) {
+             const lower = searchTerm.toLowerCase();
+             return (
+                 q.question.toLowerCase().includes(lower) ||
+                 q.topic.toLowerCase().includes(lower) ||
+                 q.category.toLowerCase().includes(lower) ||
+                 q.code_text.toLowerCase().includes(lower)
+             );
+        }
+        return true;
+    }).length;
+  }, [allQuestions, selectedDifficulty, selectedSprinklerType, selectedCategory, searchTerm]);
+
   const handleStart = (mode: QuizMode) => {
-    onStartQuiz(mode, selectedDifficulty, selectedSprinklerType, selectedCategory, mnOnly);
+    // mnOnly passed as false, as filtering is now handled by the specific mode (MN_ONLY) or manual selection is removed
+    onStartQuiz(mode, selectedDifficulty, selectedSprinklerType, selectedCategory, false, searchTerm);
   };
 
   // Progress Calculations
@@ -31,199 +146,283 @@ export const Dashboard: React.FC<DashboardProps> = ({ onStartQuiz, userProgress,
     ? Math.round((userProgress.totalCorrect / userProgress.totalQuestionsAnswered) * 100)
     : 0;
 
+  // Rank Calculation
+  const getRank = (count: number) => {
+    if (count < 50) return "Apprentice";
+    if (count < 150) return "Fitter";
+    if (count < 400) return "Journeyman Candidate";
+    if (count < 800) return "Journeyman";
+    return "Foreman";
+  };
+  const rank = getRank(userProgress.totalQuestionsAnswered);
+  const level = Math.floor(userProgress.totalQuestionsAnswered / 25) + 1;
+
+  // Circular Progress Logic (r=28, C ~ 175.9)
+  const circleRadius = 28;
+  const circleCircumference = 2 * Math.PI * circleRadius;
+  const strokeDashoffset = circleCircumference - (circleCircumference * accuracy) / 100;
+
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
-      <div className="text-center mb-8">
-        <h1 className="text-4xl font-extrabold text-gray-900 dark:text-white mb-4 tracking-tight">
-          Sprinkler Fitter <span className="text-red-600">Journeyman Exam Prep</span>
+    <div className="max-w-6xl mx-auto px-4 py-10">
+      <div className="text-center mb-12">
+        <h1 className="text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-red-600 via-orange-600 to-amber-500 mb-4 tracking-tight pb-1">
+          Conquer the Minnesota Journeyman Exam
         </h1>
-        <p className="text-lg text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
-          Conquer the Minnesota Journeyman Exam. Master NFPA 13, 13R, 13D, 14, 20, 24, 25 & State Statutes with {allQuestions.length}+ targeted questions and AI-driven study tools.
+        <p className="text-lg text-slate-600 dark:text-slate-400 max-w-3xl mx-auto leading-relaxed">
+          Master <span className="font-semibold text-red-500">NFPA 13, 13R, 13D, 14, 20, 24, 25</span> & State Statutes with <span className="font-semibold text-slate-900 dark:text-white">{allQuestions.length}+ targeted questions</span>, an AI-driven Tutor and Study Tools.
         </p>
       </div>
 
-      {/* Progress Overview Card */}
-      <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-2xl p-6 shadow-lg mb-8 text-white">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-bold uppercase tracking-widest text-gray-400">Your Career Progress</h2>
-          <div className="text-xs bg-white/10 px-2 py-1 rounded">Auto-Saved</div>
-        </div>
-        <div className="grid grid-cols-3 gap-4 divide-x divide-gray-700">
-          <div className="text-center">
-            <div className="text-3xl font-black text-green-400">{accuracy}%</div>
-            <div className="text-sm text-gray-400 mt-1">Quiz Accuracy</div>
+      {/* NEW: Exam Tracker & Countdown */}
+      <ExamTracker 
+        targetDate={userProgress.targetExamDate} 
+        onSetTargetDate={onSetTargetDate}
+      />
+
+      {/* Modernized Exam Readiness HUD */}
+      <div className="relative group mb-10">
+          {/* Outer Glow */}
+          <div className="absolute -inset-0.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-2xl opacity-30 blur-lg group-hover:opacity-50 transition duration-1000"></div>
+          
+          <div className="relative bg-slate-900 border border-slate-800 rounded-2xl p-6 md:p-8 shadow-2xl overflow-hidden">
+            {/* Background Texture & Orbs */}
+            <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-600/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+            <div className="absolute bottom-0 left-0 w-64 h-64 bg-red-600/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2"></div>
+            {/* Grid Pattern */}
+            <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:40px_40px] pointer-events-none"></div>
+
+            <div className="relative z-10">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+                    <div>
+                        <h2 className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 flex items-center gap-2">
+                             <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
+                             Current Status
+                        </h2>
+                        <div className="flex items-center gap-3">
+                             <h3 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-400">
+                                 {rank}
+                             </h3>
+                             <div className="px-3 py-1 bg-slate-800 rounded-full border border-slate-700 text-xs font-bold text-indigo-400 shadow-sm flex items-center gap-1">
+                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                 </svg>
+                                 Level {level}
+                             </div>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs font-medium text-slate-400 bg-slate-950/50 px-3 py-2 rounded-lg border border-white/5 backdrop-blur-sm shadow-inner">
+                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                        Progress Auto-Saves
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+                    {/* Accuracy Card */}
+                    <div className="bg-slate-800/40 rounded-xl p-4 border border-slate-700/50 flex items-center gap-4 relative overflow-hidden group/item hover:bg-slate-800/60 hover:border-slate-600 transition-all">
+                         <div className="relative flex-shrink-0">
+                            <svg className="w-16 h-16 transform -rotate-90">
+                                <circle cx="32" cy="32" r={circleRadius} stroke="currentColor" strokeWidth="5" fill="transparent" className="text-slate-700/50" />
+                                <circle cx="32" cy="32" r={circleRadius} stroke="currentColor" strokeWidth="5" fill="transparent" 
+                                    className={`${accuracy > 70 ? 'text-emerald-500' : accuracy > 40 ? 'text-amber-500' : 'text-red-500'} transition-all duration-1000 ease-out`}
+                                    strokeDasharray={circleCircumference} 
+                                    strokeDashoffset={strokeDashoffset} 
+                                    strokeLinecap="round"
+                                />
+                            </svg>
+                            <div className="absolute inset-0 flex items-center justify-center text-sm font-bold text-white">
+                                {accuracy}%
+                            </div>
+                         </div>
+                         <div>
+                             <div className="text-xs text-slate-400 font-bold uppercase tracking-wider mb-0.5">Performance</div>
+                             <div className="text-white font-medium text-sm">Overall Accuracy</div>
+                             <div className="text-xs text-slate-500 mt-0.5">{userProgress.totalCorrect} Correct Answers</div>
+                         </div>
+                    </div>
+
+                    {/* Total Questions Card */}
+                    <div className="bg-slate-800/40 rounded-xl p-4 border border-slate-700/50 flex items-center gap-4 relative overflow-hidden group/item hover:bg-slate-800/60 hover:border-slate-600 transition-all">
+                        <div className="absolute right-0 top-0 w-24 h-full bg-blue-500/5 skew-x-12 translate-x-10 group-hover/item:translate-x-0 transition-transform duration-500"></div>
+                        <div className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-500/20 to-blue-600/5 flex items-center justify-center text-blue-400 border border-blue-500/20">
+                             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                             </svg>
+                        </div>
+                        <div>
+                             <div className="text-2xl font-bold text-white leading-none mb-1">{userProgress.totalQuestionsAnswered}</div>
+                             <div className="text-sm text-slate-400 font-medium">Questions Taken</div>
+                        </div>
+                    </div>
+
+                    {/* Mastered/Flashcards Card */}
+                    <div className="bg-slate-800/40 rounded-xl p-4 border border-slate-700/50 flex items-center gap-4 relative overflow-hidden group/item hover:bg-slate-800/60 hover:border-slate-600 transition-all">
+                        <div className="absolute right-0 top-0 w-24 h-full bg-violet-500/5 skew-x-12 translate-x-10 group-hover/item:translate-x-0 transition-transform duration-500"></div>
+                         <div className="w-14 h-14 rounded-full bg-gradient-to-br from-violet-500/20 to-violet-600/5 flex items-center justify-center text-violet-400 border border-violet-500/20">
+                             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                             </svg>
+                        </div>
+                        <div>
+                             <div className="text-2xl font-bold text-white leading-none mb-1">{userProgress.flashcardsLearned}</div>
+                             <div className="text-sm text-slate-400 font-medium">Concepts Mastered</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
           </div>
-          <div className="text-center">
-            <div className="text-3xl font-black text-white">{userProgress.totalQuestionsAnswered}</div>
-            <div className="text-sm text-gray-400 mt-1">Questions Answered</div>
-          </div>
-          <div className="text-center">
-            <div className="text-3xl font-black text-purple-400">{userProgress.flashcardsLearned}</div>
-            <div className="text-sm text-gray-400 mt-1">Cards Mastered</div>
-          </div>
-        </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 mb-10 transition-colors duration-200">
-        <div className="grid md:grid-cols-3 gap-6">
-          {/* Difficulty Selection */}
-          <div className="flex flex-col items-center">
-            <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Difficulty</h3>
-            <div className="bg-gray-100 dark:bg-gray-700 p-1.5 rounded-xl flex gap-1 w-full justify-center transition-colors duration-200">
-              {difficulties.map((level) => (
-                <button
-                  key={level}
-                  onClick={() => setSelectedDifficulty(level)}
-                  className={`flex-1 py-2 rounded-lg text-xs md:text-sm font-semibold transition-all duration-200 ${selectedDifficulty === level
-                      ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm border border-gray-200 dark:border-gray-500'
-                      : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-200/50 dark:hover:bg-gray-600/50'
-                    }`}
-                >
-                  {level}
-                </button>
-              ))}
+      {/* Study Filters - Professional Bar Layout */}
+      <div className="mb-10">
+        <div className="flex items-center justify-between mb-3 px-1">
+            <div className="flex items-center gap-3">
+                <h2 className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M3 3a1 1 0 011-1h12a1 1 0 011 1v3a1 1 0 01-.293.707L12 11.414V15a1 1 0 01-.293.707l-2 2A1 1 0 018 17v-5.586L3.293 6.707A1 1 0 013 6V3z" clipRule="evenodd" />
+                    </svg>
+                    Study Configuration
+                </h2>
+                {/* Live Counter Badge */}
+                <span className={`text-xs font-bold px-2 py-0.5 rounded-full transition-colors ${filteredCount === 0 ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-300' : 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-300'}`}>
+                    {filteredCount} Questions Available
+                </span>
             </div>
-          </div>
-
-          {/* Sprinkler Type Selection */}
-          <div className="flex flex-col items-center">
-            <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">System / Sprinkler Type</h3>
-            <div className="relative w-full">
-              <select
-                value={selectedSprinklerType}
-                onChange={(e) => setSelectedSprinklerType(e.target.value as SprinklerType)}
-                className="w-full bg-gray-100 dark:bg-gray-700 p-3 rounded-xl text-gray-700 dark:text-gray-200 font-semibold appearance-none focus:outline-none focus:ring-2 focus:ring-red-500 cursor-pointer text-sm transition-colors duration-200"
-              >
-                {sprinklerTypes.map((type) => (
-                  <option key={type} value={type}>{type}</option>
-                ))}
-              </select>
-              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-700 dark:text-gray-300">
-                <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" /></svg>
-              </div>
-            </div>
-          </div>
-
-          {/* Category Selection */}
-          <div className="flex flex-col items-center">
-            <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Category</h3>
-            <div className="relative w-full">
-              <select
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                className="w-full bg-gray-100 dark:bg-gray-700 p-3 rounded-xl text-gray-700 dark:text-gray-200 font-semibold appearance-none focus:outline-none focus:ring-2 focus:ring-red-500 cursor-pointer text-sm transition-colors duration-200"
-              >
-                {categories.map((cat) => (
-                  <option key={cat} value={cat}>{cat}</option>
-                ))}
-              </select>
-              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-700 dark:text-gray-300">
-                <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" /></svg>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* MN Amendments Toggle */}
-        <div className="mt-6 pt-6 border-t border-gray-100 dark:border-gray-700 flex justify-center transition-colors duration-200">
-          <label className={`inline-flex items-center cursor-pointer px-5 py-3 rounded-full transition-all duration-200 border ${mnOnly ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-300 dark:border-blue-700 shadow-inner' : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'}`}>
-            <input
-              type="checkbox"
-              checked={mnOnly}
-              onChange={(e) => setMnOnly(e.target.checked)}
-              className="form-checkbox h-5 w-5 text-blue-600 rounded focus:ring-blue-500 border-gray-300"
-            />
-            <span className={`ml-3 font-semibold text-sm ${mnOnly ? 'text-blue-800 dark:text-blue-300' : 'text-gray-600 dark:text-gray-300'}`}>Show MN Amendments Only</span>
-            {mnOnly && (
-              <span className="ml-2 bg-blue-600 text-white text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wide">Active</span>
+            
+            {(selectedDifficulty !== 'Any' || selectedSprinklerType !== 'Any' || selectedCategory !== 'Any' || searchTerm !== '') && (
+                 <button 
+                    onClick={() => {
+                        setSelectedDifficulty('Any');
+                        setSelectedSprinklerType('Any');
+                        setSelectedCategory('Any');
+                        setSearchTerm('');
+                    }}
+                    className="text-xs text-red-500 hover:text-red-600 font-bold flex items-center gap-1 transition-colors"
+                 >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
+                    RESET
+                 </button>
             )}
-          </label>
+        </div>
+        
+        <div className="bg-white dark:bg-slate-900 p-1 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm grid grid-cols-1 md:grid-cols-4 gap-1">
+            
+            {/* Search Bar - Spans 1 column (or full row on mobile) */}
+            <div className="relative group md:col-span-1">
+                 <label className="absolute top-2 left-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider z-10">Search</label>
+                 <input
+                    type="text"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="Keywords..."
+                    className="w-full bg-slate-50 hover:bg-slate-100 dark:bg-slate-950 dark:hover:bg-slate-800 pt-6 pb-2 px-3 rounded-lg text-sm font-bold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500 transition-colors placeholder-slate-300 dark:placeholder-slate-600"
+                 />
+                 <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-slate-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                </div>
+            </div>
+
+            {/* Difficulty Select */}
+            <div className="relative group">
+                <label className="absolute top-2 left-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider z-10">Difficulty</label>
+                <select 
+                    value={selectedDifficulty}
+                    onChange={(e) => setSelectedDifficulty(e.target.value as DifficultyLevel)}
+                    className="w-full bg-slate-50 hover:bg-slate-100 dark:bg-slate-950 dark:hover:bg-slate-800 pt-6 pb-2 px-3 rounded-lg text-sm font-bold text-slate-700 dark:text-slate-200 appearance-none outline-none focus:ring-2 focus:ring-indigo-500 transition-colors cursor-pointer border-none"
+                >
+                    {difficulties.map(d => <option key={d} value={d}>{d}</option>)}
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-slate-400">
+                    <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" /></svg>
+                </div>
+            </div>
+
+            {/* System Type Select */}
+            <div className="relative group">
+                <label className="absolute top-2 left-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider z-10">System Type</label>
+                 <select 
+                    value={selectedSprinklerType}
+                    onChange={(e) => setSelectedSprinklerType(e.target.value as SprinklerType)}
+                    className="w-full bg-slate-50 hover:bg-slate-100 dark:bg-slate-950 dark:hover:bg-slate-800 pt-6 pb-2 px-3 rounded-lg text-sm font-bold text-slate-700 dark:text-slate-200 appearance-none outline-none focus:ring-2 focus:ring-indigo-500 transition-colors cursor-pointer border-none"
+                >
+                    {sprinklerTypes.map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
+                 <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-slate-400">
+                    <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" /></svg>
+                </div>
+            </div>
+
+            {/* Category Select */}
+            <div className="relative group">
+                <label className="absolute top-2 left-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider z-10">Category</label>
+                 <select 
+                    value={selectedCategory}
+                    onChange={(e) => setSelectedCategory(e.target.value)}
+                    className="w-full bg-slate-50 hover:bg-slate-100 dark:bg-slate-950 dark:hover:bg-slate-800 pt-6 pb-2 px-3 rounded-lg text-sm font-bold text-slate-700 dark:text-slate-200 appearance-none outline-none focus:ring-2 focus:ring-indigo-500 transition-colors cursor-pointer border-none"
+                >
+                    {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+                 <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-slate-400">
+                    <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" /></svg>
+                </div>
+            </div>
         </div>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-6">
-        {/* Flashcard Mode (New) */}
-        <div
+      {/* Row 1: Primary Actions (Updated to 3 columns) */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <ActionCard
+          title="Fast 10"
+          subtitle="A rapid-fire set of 10 random questions. Perfect for quick breaks."
+          icon={FastIcon}
+          gradientClass="bg-gradient-to-br from-emerald-500 via-green-500 to-teal-600"
+          onClick={() => handleStart(QuizMode.FAST_10)}
+        />
+        <ActionCard
+          title="Flashcard Mode"
+          subtitle="Untimed study. Review questions at your own pace. Mark cards as 'Learned' or 'Review'."
+          icon={FlashcardsIcon}
+          gradientClass="bg-gradient-to-br from-violet-600 via-indigo-600 to-blue-600"
           onClick={() => handleStart(QuizMode.FLASHCARDS)}
-          className="md:col-span-2 group bg-gradient-to-r from-purple-600 to-indigo-700 rounded-2xl p-6 text-white shadow-xl hover:shadow-2xl transition-all cursor-pointer transform hover:-translate-y-1 relative overflow-hidden"
-        >
-          <div className="absolute top-0 right-0 -mt-4 -mr-4 w-32 h-32 bg-white opacity-10 rounded-full blur-2xl transform rotate-45"></div>
-          <div className="flex items-center justify-between mb-4 relative z-10">
-            <div>
-              <h2 className="text-2xl font-bold">Flashcard Mode</h2>
-              <span className="text-purple-200 text-sm font-semibold tracking-wider">UNTIMED STUDY</span>
-            </div>
-            <div className="p-3 bg-white/20 rounded-xl">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-              </svg>
-            </div>
-          </div>
-          <p className="opacity-90 relative z-10 max-w-lg">
-            Review questions at your own pace. Mark cards as "Learned" to remove them from the deck, or "Review" to see them again later.
-          </p>
-        </div>
-
-        {/* Quick Start Card */}
-        <div
+        />
+        <ActionCard
+          title="Comprehensive Quiz"
+          subtitle="Randomized questions covering all topics including Safety, Hydraulics, and Installation."
+          icon={QuizIcon}
+          gradientClass="bg-gradient-to-br from-rose-500 via-red-500 to-orange-600"
           onClick={() => handleStart(QuizMode.ALL)}
-          className="group bg-gradient-to-br from-red-600 to-red-700 rounded-2xl p-6 text-white shadow-xl hover:shadow-2xl transition-all cursor-pointer transform hover:-translate-y-1"
-        >
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-bold">Comprehensive Quiz</h2>
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 opacity-80 group-hover:opacity-100" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
-            </svg>
-          </div>
-          <p className="opacity-90">Randomized questions covering all topics including Safety, Hydraulics, and Installation.</p>
-        </div>
+        />
+      </div>
 
-        {/* MN Specific */}
-        <div
+      {/* Row 2: Secondary Topics (Split into thirds on desktop) */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <TopicCard
+          title="MN Amendments"
+          description="Focus strictly on MN Statutes Chapter 299M, Rules 7512, and state fire code amendments."
+          icon={MnIcon}
+          iconColor="text-blue-500"
           onClick={() => handleStart(QuizMode.MN_ONLY)}
-          className="group bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-md hover:shadow-xl border-2 border-blue-500 hover:border-blue-600 dark:border-blue-600 dark:hover:border-blue-500 transition-all cursor-pointer transform hover:-translate-y-1"
-        >
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-bold text-gray-800 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400">MN Amendments</h2>
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-          </div>
-          <p className="text-gray-600 dark:text-gray-300">Focus strictly on MN Statutes Chapter 299M, Rules 7512, and state fire code amendments.</p>
-        </div>
-
-        {/* Hydraulics */}
-        <div
+          darkMode={darkMode}
+        />
+        <TopicCard
+          title="Hydraulics & Math"
+          description="Friction loss, C-factors, and head pressure calculations."
+          icon={HydraulicsIcon}
+          iconColor="text-amber-500"
           onClick={() => handleStart(QuizMode.HYDRAULICS)}
-          className="group bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-md hover:shadow-xl border border-gray-200 dark:border-gray-700 transition-all cursor-pointer transform hover:-translate-y-1"
-        >
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold text-gray-800 dark:text-white">Hydraulics & Math</h2>
-            <div className="p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-yellow-700 dark:text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-              </svg>
-            </div>
-          </div>
-          <p className="text-gray-600 dark:text-gray-300 text-sm">Friction loss, C-factors, and head pressure calculations.</p>
-        </div>
-
-        {/* NFPA 25 */}
-        <div
+          darkMode={darkMode}
+        />
+        <TopicCard
+          title="ITM (NFPA 25)"
+          description="Inspection, Testing, and Maintenance frequencies and procedures."
+          icon={Nfpa25Icon}
+          iconColor="text-emerald-500"
           onClick={() => handleStart(QuizMode.NFPA25)}
-          className="group bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-md hover:shadow-xl border border-gray-200 dark:border-gray-700 transition-all cursor-pointer transform hover:-translate-y-1"
-        >
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold text-gray-800 dark:text-white">ITM (NFPA 25)</h2>
-            <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-700 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-          </div>
-          <p className="text-gray-600 dark:text-gray-300 text-sm">Inspection, Testing, and Maintenance frequencies and procedures.</p>
-        </div>
+          darkMode={darkMode}
+        />
       </div>
     </div>
   );

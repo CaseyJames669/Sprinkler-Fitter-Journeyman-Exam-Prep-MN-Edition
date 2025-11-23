@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -9,7 +9,6 @@
     <style>
       body {
         font-family: 'Inter', sans-serif;
-        background-color: #f3f4f6;
       }
       /* Custom Scrollbar for chat */
       .scrollbar-hide::-webkit-scrollbar {
@@ -20,6 +19,11 @@
           scrollbar-width: none;
       }
     </style>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+      }
+    </script>
   <script type="importmap">
 {
   "imports": {

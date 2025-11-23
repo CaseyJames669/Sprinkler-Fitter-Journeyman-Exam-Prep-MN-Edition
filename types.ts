@@ -1,6 +1,7 @@
+
 export type DifficultyLevel = 'Any' | 'Easy' | 'Medium' | 'Hard';
 
-export type SprinklerType = 'Any' | 'Standard Spray' | 'Residential' | 'ESFR/Storage' | 'Dry/Preaction' | 'General';
+export type SprinklerType = 'Any' | 'Standard Spray' | 'Residential' | 'ESFR/Storage' | 'Dry/Preaction' | 'General' | 'N/A';
 
 export interface Question {
   id: number;
@@ -24,7 +25,8 @@ export enum QuizMode {
   HYDRAULICS = 'HYDRAULICS',
   NFPA25 = 'NFPA25',
   NFPA13 = 'NFPA13',
-  FLASHCARDS = 'FLASHCARDS'
+  FLASHCARDS = 'FLASHCARDS',
+  FAST_10 = 'FAST_10'
 }
 
 export interface ChatMessage {
@@ -42,9 +44,25 @@ export interface QuizState {
   shuffledOptions: string[];
 }
 
+export interface CategoryStats {
+  answered: number;
+  correct: number;
+  streak: number;
+  masteryLevel: number;
+  lastAnsweredDate?: string;
+}
+
 export interface UserProgress {
   totalQuestionsAnswered: number;
   totalCorrect: number;
   flashcardsLearned: number;
-  statsByCategory: Record<string, { answered: number; correct: number }>;
+  statsByCategory: Record<string, CategoryStats>;
+  targetExamDate?: string | null; // ISO Date string
+}
+
+export interface ExamSchedule {
+  id: string;
+  date: string; // ISO Date string (YYYY-MM-DD)
+  deadline: string; // ISO Date string
+  location: string;
 }

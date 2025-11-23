@@ -1,3 +1,4 @@
+
 import { GoogleGenAI } from "@google/genai";
 import { Question } from "../types";
 
@@ -13,6 +14,7 @@ Role:
 2. Provide mnemonics (memory aids) whenever possible.
 3. If the user asks about Minnesota Amendments, emphasize strict adherence to MN code (e.g., FDC height 18-48", valve supervision).
 4. Be encouraging but strict about safety and code compliance.
+5. ALWAYS explicitly reference the specific Code Section, Statute, or Rule number provided in the context (e.g., "As per NFPA 13 Section 8.15...").
 
 Format:
 Keep responses concise (under 150 words usually). Use markdown for bolding key terms.
@@ -26,11 +28,15 @@ export const askTutor = async (userQuery: string, currentQuestion?: Question): P
       contextPrompt = `
       Current Quiz Question Context:
       Topic: ${currentQuestion.topic} (${currentQuestion.category})
+      System Type: ${currentQuestion.sprinklerType || 'General (N/A)'}
       Question: "${currentQuestion.question}"
       Correct Answer: "${currentQuestion.answer}"
+      
+      **Code Reference:**
       Citation: ${currentQuestion.citation}
+      Specific Section/Rule: ${currentQuestion.citation}
       Code Text: "${currentQuestion.code_text}"
-      ${currentQuestion.is_mn_amendment ? "**THIS IS A MINNESOTA SPECIFIC AMENDMENT**" : ""}
+      ${currentQuestion.is_mn_amendment ? "**IMPORTANT: This is a MINNESOTA SPECIFIC AMENDMENT that overrides standard NFPA.**" : ""}
       
       User Question: "${userQuery}"
       `;
